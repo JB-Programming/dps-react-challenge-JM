@@ -1,5 +1,6 @@
 import dpsLogo from './assets/DPS.svg';
 import './App.css';
+import { useState } from 'react';
 
 const checkData = (value: any, data:any) => {
 	let correctData = [];
@@ -13,44 +14,143 @@ const checkData = (value: any, data:any) => {
 			} else if (data[i].name.toLowerCase().includes(value.toLowerCase())) {
 				partialMatches.push(data[i]);
 			}
+			correctData = [...exactMatches, ...partialMatches];
 		}
 	}
 	else if (typeof(value) === "number") {
 		for (let i = 0; i < data.length; i++) {
-			if (data[i].postalCode.toString().startsWith(value.toString())) {
-				correctData.push(data[i]);
+			if (parseInt(data[i].postalCode) === value) {
+				exactMatches.push(data[i]);
+			} else if (data[i].postalCode.toString().startsWith(value.toString())) {
+				partialMatches.push(data[i]);
 			}
 		}
 	}
-	
+
 	correctData = [...exactMatches, ...partialMatches];
 	return correctData;	
 }
-const fetchCityName = (postal_code: number) => {
-	fetch(
-		`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=1&pageSize=50`,
-	)
-	.then((response) => response.json())
-	.then((data) => console.log(checkData(postal_code, data)));
-}
+
+	const fetchCityName = (postal_code: number) => {
+		return fetch(
+			`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=1&pageSize=50`,
+		)
+		.then((response) => {
+			console.log('Response:', response);
+			return response.json();
+		})
+		.then((data) => {
+			console.log('Data:', data);
+			const filtered = checkData(postal_code, data);
+			console.log('Filtered:', filtered);
+			return filtered;
+		});
+	}
 
 const fetchPostalCode = (city_name: string) => {
-	fetch(
+	return fetch(
 		`https://openplzapi.org/de/Localities?name=${city_name}&page=1&pageSize=50`,
 	)
 	.then((response) => {
 		console.log('Response:', response);
 		console.log('Response Status:', response.headers.get('x-total-count'));
-			// get all response headers and add them together and send response as json
 		return response.json();
 	})
-	.then((data) => console.log(checkData(city_name, data)));
+	.then((data) => {
+		console.log('Data:', data);
+		const filtered = checkData(city_name, data);
+		console.log('Filtered:', filtered);
+		return filtered;
+	});
 }
 
 
 
 
 function App() {
+	const [postalOptions, setPostalOptions] = useState<string[]>([]);
+	const [postalInput, setPostalInput] = useState<string>('');
+	const [showSelect, setShowSelect] = useState<boolean>(false);
+	const [cityOptions, setCityOptions] = useState<string[]>([]);
+	const [cityInput, setCityInput] = useState<string>('');
+	const [showCitySelect, setShowCitySelect] = useState<boolean>(false);
+
+	const handleCityChange = (value: string) => {
+		setCityInput(value);
+		setShowCitySelect(false);
+		setCityOptions([]);
+		// Hole Postal Codes für die Stadt und steuere UI abhängig von der Trefferzahl
+		fetchPostalCode(value).then((results: any[]) => {
+			const codes = Array.from(new Set(results.map((r: any) => String(r.postalCode))));
+			if (codes.length > 1) {
+				setShowSelect(true);
+				setPostalOptions(codes);
+				setPostalInput('');
+			} else if (codes.length === 1) {
+				setShowSelect(false);
+				setPostalOptions([]);
+				setPostalInput(codes[0] ?? '');
+			} else {
+				setShowSelect(false);
+				setPostalOptions([]);
+				setPostalInput('');
+			}
+		});
+	};
+
+	const updateCitiesFromPostal = (num: number) => {
+		fetchCityName(num).then((results: any[]) => {
+			const cities = Array.from(new Set(results.map((r: any) => String(r.name))));
+			if (cities.length > 1) {
+				setShowCitySelect(true);
+				setCityOptions(cities);
+				setCityInput('');
+			} else if (cities.length === 1) {
+				setShowCitySelect(false);
+				setCityOptions([]);
+				setCityInput(cities[0] ?? '');
+			} else {
+				setShowCitySelect(false);
+				setCityOptions([]);
+				setCityInput('');
+			}
+		});
+	};
+
+	const handlePostalInputChange = (value: string) => {
+		setPostalInput(value);
+		const num = parseInt(value, 10);
+		if (!Number.isNaN(num)) {
+			updateCitiesFromPostal(num);
+		}
+		else{
+			setShowCitySelect(false);
+			setCityOptions([]);
+			setCityInput('');
+		}
+	};
+
+	const handleSelectChange = (value: string) => {
+		setPostalInput(value);
+		const num = parseInt(value, 10);
+		if (!Number.isNaN(num)) {
+			updateCitiesFromPostal(num);
+		}
+	};
+
+	const handleCitySelectChange = (value: string) => {
+		setCityInput(value);
+	};
+
+	const handleReset = () => {
+		setCityInput('');
+		setPostalInput('');
+		setCityOptions([]);
+		setPostalOptions([]);
+		setShowCitySelect(false);
+		setShowSelect(false);
+	};
+
 	return (
 		<>
 			<div>
@@ -60,15 +160,59 @@ function App() {
 			</div>
 			<div className="home-card">
 				<p>Your solution goes here 😊</p>
-				<input type="text" name="city_name" id="city_name" 
-				onChange={(e) => fetchPostalCode(e.target.value)}
-				/>
-				<input type="text" name="single_postal_code" id="single_postal_code" 
-				onChange={(e) => fetchCityName(parseInt(e.target.value))}
-				/>
-				<select name="multi_postal_code" id="multi_postal_code">
-					<option value="postal_code_1">Postal Code 1</option>
-				</select>
+				{!showCitySelect ? (
+					<input
+						type="text"
+						name="city_name"
+						id="city_name"
+						value={cityInput}
+						onChange={(e) => handleCityChange(e.target.value)}
+					/>
+				) : (
+					<select
+						name="multi_city"
+						id="multi_city"
+						value={cityInput}
+						onChange={(e) => handleCitySelectChange(e.target.value)}
+					>
+						<option value="" disabled>
+							Bitte Ort wählen
+						</option>
+						{cityOptions.map((city) => (
+							<option key={city} value={city}>
+								{city}
+							</option>
+						))}
+					</select>
+				)}
+				{/* XOR: Entweder Single-Input oder Select je nach Trefferzahl */}
+				{!showSelect ? (
+					<input
+						type="text"
+						name="single_postal_code"
+						id="single_postal_code"
+						value={postalInput}
+						onChange={(e) => handlePostalInputChange(e.target.value)}
+					/>
+				) : (
+					<select
+						name="multi_postal_code"
+						id="multi_postal_code"
+						value={postalInput}
+						onChange={(e) => handleSelectChange(e.target.value)}
+					>
+						<option value="" disabled>
+							Alle Postleitzahl Optionen
+						</option>
+						{postalOptions.map((code) => (
+							<option key={code} value={code}>
+								{code}
+							</option>
+						))}
+					</select>
+				)}
+
+				<button type="reset" onClick={handleReset}>Reset</button>
 			</div>
 		</>
 	);
