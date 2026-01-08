@@ -37,11 +37,29 @@ const checkData = (value: any, data:any) => {
 		)
 		.then((response) => {
 			console.log('Response:', response);
-			return response.json();
+			const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
+			console.log('Response Status (x-total-count):', totalCount);
+			const pageSize = 50;
+			const totalPages = Math.ceil(totalCount / pageSize);
+			console.log('Total Pages:', totalPages);
+			
+			// Erste Seite bereits geladen, hole restliche Seiten parallel
+			const firstPagePromise = response.json();
+			const remainingPages = [];
+			
+			for (let page = 2; page <= totalPages; page++) {
+				remainingPages.push(
+					fetch(`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=${page}&pageSize=${pageSize}`)
+						.then(r => r.json())
+				);
+			}
+			
+			return Promise.all([firstPagePromise, ...remainingPages]);
 		})
-		.then((data) => {
-			console.log('Data:', data);
-			const filtered = checkData(postal_code, data);
+		.then((allPages) => {
+			const allData = allPages.flat();
+			console.log('All Data:', allData);
+			const filtered = checkData(postal_code, allData);
 			console.log('Filtered:', filtered);
 			return filtered;
 		});
@@ -53,12 +71,29 @@ const fetchPostalCode = (city_name: string) => {
 	)
 	.then((response) => {
 		console.log('Response:', response);
-		console.log('Response Status:', response.headers.get('x-total-count'));
-		return response.json();
+		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
+		console.log('Response Status (x-total-count):', totalCount);
+		const pageSize = 50;
+		const totalPages = Math.ceil(totalCount / pageSize);
+		console.log('Total Pages:', totalPages);
+		
+		// Erste Seite bereits geladen, hole restliche Seiten parallel
+		const firstPagePromise = response.json();
+		const remainingPages = [];
+		
+		for (let page = 2; page <= totalPages; page++) {
+			remainingPages.push(
+				fetch(`https://openplzapi.org/de/Localities?name=${city_name}&page=${page}&pageSize=${pageSize}`)
+					.then(r => r.json())
+			);
+		}
+		
+		return Promise.all([firstPagePromise, ...remainingPages]);
 	})
-	.then((data) => {
-		console.log('Data:', data);
-		const filtered = checkData(city_name, data);
+	.then((allPages) => {
+		const allData = allPages.flat();
+		console.log('All Data:', allData);
+		const filtered = checkData(city_name, allData);
 		console.log('Filtered:', filtered);
 		return filtered;
 	});
@@ -79,23 +114,29 @@ function App() {
 		setCityInput(value);
 		setShowCitySelect(false);
 		setCityOptions([]);
-		// Hole Postal Codes für die Stadt und steuere UI abhängig von der Trefferzahl
-		fetchPostalCode(value).then((results: any[]) => {
-			const codes = Array.from(new Set(results.map((r: any) => String(r.postalCode))));
-			if (codes.length > 1) {
-				setShowSelect(true);
-				setPostalOptions(codes);
-				setPostalInput('');
-			} else if (codes.length === 1) {
-				setShowSelect(false);
-				setPostalOptions([]);
-				setPostalInput(codes[0] ?? '');
-			} else {
-				setShowSelect(false);
-				setPostalOptions([]);
-				setPostalInput('');
-			}
-		});
+		if (value.trim() === '') {
+			setShowSelect(false);
+			setPostalOptions([]);
+			setPostalInput('');
+		}
+		else{
+			fetchPostalCode(value).then((results: any[]) => {
+				const codes = Array.from(new Set(results.map((r: any) => String(r.postalCode))));
+				if (codes.length > 1) {
+					setShowSelect(true);
+					setPostalOptions(codes);
+					setPostalInput('');
+				} else if (codes.length === 1) {
+					setShowSelect(false);
+					setPostalOptions([]);
+					setPostalInput(codes[0] ?? '');
+				} else {
+					setShowSelect(false);
+					setPostalOptions([]);
+					setPostalInput('');
+				}
+			});
+		}
 	};
 
 	const updateCitiesFromPostal = (num: number) => {
@@ -176,7 +217,7 @@ function App() {
 						onChange={(e) => handleCitySelectChange(e.target.value)}
 					>
 						<option value="" disabled>
-							Bitte Ort wählen
+							Alle Orte Optionen ({cityOptions.length} Stk.)
 						</option>
 						{cityOptions.map((city) => (
 							<option key={city} value={city}>
@@ -202,7 +243,7 @@ function App() {
 						onChange={(e) => handleSelectChange(e.target.value)}
 					>
 						<option value="" disabled>
-							Alle Postleitzahl Optionen
+							Alle Postleitzahl Optionen ({postalOptions.length} Stk.)
 						</option>
 						{postalOptions.map((code) => (
 							<option key={code} value={code}>
