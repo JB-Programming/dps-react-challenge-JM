@@ -5,29 +5,39 @@ import { useState } from 'react';
 const checkData = (value: any, data:any) => {
 	let correctData = [];
 	let exactMatches = [];
-	let partialMatches = [];
+	//let partialMatches = [];
 	
 	if (typeof(value) === "string") {
 		for (let i = 0; i < data.length; i++) {
 			if (data[i].name.toLowerCase() === value.toLowerCase()) {
 				exactMatches.push(data[i]);
-			} else if (data[i].name.toLowerCase().includes(value.toLowerCase())) {
+			} 
+			// Only include partial matches if no exact matches found
+			/*
+			else if (data[i].name.toLowerCase().includes(value.toLowerCase())) {
 				partialMatches.push(data[i]);
 			}
-			correctData = [...exactMatches, ...partialMatches];
+			*/
 		}
 	}
 	else if (typeof(value) === "number") {
 		for (let i = 0; i < data.length; i++) {
 			if (parseInt(data[i].postalCode) === value) {
 				exactMatches.push(data[i]);
-			} else if (data[i].postalCode.toString().startsWith(value.toString())) {
+			} 
+
+			// Only include partial matches if no exact matches found
+			/*
+			else if (data[i].postalCode.toString().startsWith(value.toString())) {
 				partialMatches.push(data[i]);
 			}
+			*/
 		}
 	}
+	correctData = [...exactMatches];
 
-	correctData = [...exactMatches, ...partialMatches];
+	//correctData = [...exactMatches, ...partialMatches];
+
 	return correctData;	
 }
 
@@ -175,7 +185,7 @@ function App() {
 			setAllCodes([]);
 			setSelectedInfo('');
 		}
-		return mapped;
+		return [mapped, cities];
 	};
 
 	const handlePostalInputChange = (value: string) => {
@@ -193,18 +203,43 @@ function App() {
 		}
 	};
 
-	const handleSelectChange = (value: string) => {
+	const handleSelectChange = async (value: string) => {
 		setPostalInput(value);
 		setSelectedInfo('');
 		
-		const num = parseInt(value, 10);
-		if (!Number.isNaN(num)) {
-			updateCitiesFromPostal(num);
-		}
+		// Find all possible cities for the selected postal code
 
-		console.log("AllCodes on select change:", allCodes);
-		if (value !== '' && cityInput !== ''){
+		/*
+		const num = parseInt(value, 10);
+		let newCodes: any[] = [];
+		let cities: any[] = [];
+		let matched: any = null;
+		if (!Number.isNaN(num)) {
+			let x = await updateCitiesFromPostal(num);
+			newCodes = x[0];
+			cities = x[1];
+		}
+		
+		console.log("AllCodes on select change:", newCodes);
+		if (cities.length === 1 && value !== '' && cities[0] !== '') {
+			matched = newCodes.find(code => code.name === cities[0] && code.postalCode === value);
+			console.log("Found match for select change:", matched);
+			if (matched) {
+				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
+				console.log('Matched:', matched);
+			}
+		}
+		else if (value !== '' && cityInput !== ''){
 			console.log("Select change:", value, cityInput);
+			matched = newCodes.find(code => code.name === cityInput && code.postalCode === value);
+			console.log("Found match for select change:", matched);
+			if (matched) {
+				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
+				console.log('Matched:', matched);
+			}
+		}
+		*/
+		if (value !== '' && cityInput !== '') {
 			const matched = allCodes.find(code => code.name === cityInput && code.postalCode === value);
 			console.log("Found match for select change:", matched);
 			if (matched) {
@@ -212,6 +247,7 @@ function App() {
 				console.log('Matched:', matched);
 			}
 		}
+
 	};
 
 	const handleCitySelectChange = (value: string) => {
@@ -271,7 +307,6 @@ function App() {
 						))}
 					</select>
 				)}
-				{/* XOR: Entweder Single-Input oder Select je nach Trefferzahl */}
 				{!showSelect ? (
 					<input
 						type="text"
