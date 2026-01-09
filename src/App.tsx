@@ -148,22 +148,25 @@ function App() {
 					setShowSelect(true);
 					setPostalOptions(codes);
 					setPostalInput('');
+					setSelectedInfo('');
 				} else if (codes.length === 1) {
 					setShowSelect(false);
 					setPostalOptions([]);
 					setPostalInput(codes[0].postalCode ?? '');
+					setSelectedInfo('');
 				} else {
 					setShowSelect(false);
 					setPostalOptions([]);
 					setPostalInput('');
 					setAllCodes([]);
-					setSelectedInfo('');
+					setSelectedInfo('City not found.');
 				}
 			});
 		}
 	};
 
 	const updateCitiesFromPostal = async (num: number) => {
+		
 		const results: any[] = await fetchCityName(num);
 		const mapped = results.map((r: any) => ({
 			postalCode: r.postalCode,
@@ -177,24 +180,27 @@ function App() {
 			setShowCitySelect(true);
 			setCityOptions(cities);
 			setCityInput('');
+			setSelectedInfo('');
 		} else if (cities.length === 1) {
 			setShowCitySelect(false);
 			setCityOptions([]);
 			setCityInput(cities[0] ?? '');
+			setSelectedInfo('');
 		} else {
 			setShowCitySelect(false);
 			setCityOptions([]);
 			setCityInput('');
 			setAllCodes([]);
-			setSelectedInfo('');
+			setSelectedInfo('Postal code not found.');
 		}
 		return [mapped, cities];
 	};
 
 	const handlePostalInputChange = (value: string) => {
 		setPostalInput(value);
-		const num = parseInt(value, 10);
-		if (!Number.isNaN(num)) {
+		const isFiveDigit = /^\d{5}$/.test(value);
+		if (isFiveDigit) {
+			const num = parseInt(value, 10);
 			updateCitiesFromPostal(num);
 		}
 		else{
@@ -202,7 +208,7 @@ function App() {
 			setCityOptions([]);
 			setCityInput('');
 			setAllCodes([]);
-			setSelectedInfo('');
+			setSelectedInfo('Invalid postal code.');
 		}
 	};
 
@@ -244,6 +250,16 @@ function App() {
 		*/
 
 		// Comment out if using the above block
+		const isFiveDigit = /^\d{5}$/.test(value);
+		if (!isFiveDigit) {
+			setShowCitySelect(false);
+			setCityOptions([]);
+			setCityInput('');
+			setAllCodes([]);
+			setSelectedInfo('Invalid postal code.');
+			return;
+		}
+
 		if (value !== '' && cityInput !== '') {
 			const matched = allCodes.find(code => code.name === cityInput && code.postalCode === value);
 			console.log("Found match for select change:", matched);
