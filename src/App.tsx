@@ -109,6 +109,8 @@ function App() {
 	const [cityOptions, setCityOptions] = useState<string[]>([]);
 	const [cityInput, setCityInput] = useState<string>('');
 	const [showCitySelect, setShowCitySelect] = useState<boolean>(false);
+	const [allCodes, setAllCodes] = useState<any[]>([]);
+	const [selectedInfo, setSelectedInfo] = useState<string>('');
 
 	const handleCityChange = (value: string) => {
 		setCityInput(value);
@@ -121,7 +123,14 @@ function App() {
 		}
 		else{
 			fetchPostalCode(value).then((results: any[]) => {
+				setAllCodes(results.map((r: any) => ({
+					postalCode: r.postalCode,
+					name: r.name,
+					district: r.district?.name || 'N/A',
+					federalState: r.federalState?.name || 'N/A'
+				})));
 				const codes = Array.from(new Set(results.map((r: any) => String(r.postalCode))));
+				
 				if (codes.length > 1) {
 					setShowSelect(true);
 					setPostalOptions(codes);
@@ -134,28 +143,39 @@ function App() {
 					setShowSelect(false);
 					setPostalOptions([]);
 					setPostalInput('');
+					setAllCodes([]);
+					setSelectedInfo('');
 				}
 			});
 		}
 	};
 
-	const updateCitiesFromPostal = (num: number) => {
-		fetchCityName(num).then((results: any[]) => {
-			const cities = Array.from(new Set(results.map((r: any) => String(r.name))));
-			if (cities.length > 1) {
-				setShowCitySelect(true);
-				setCityOptions(cities);
-				setCityInput('');
-			} else if (cities.length === 1) {
-				setShowCitySelect(false);
-				setCityOptions([]);
-				setCityInput(cities[0] ?? '');
-			} else {
-				setShowCitySelect(false);
-				setCityOptions([]);
-				setCityInput('');
-			}
-		});
+	const updateCitiesFromPostal = async (num: number) => {
+		const results: any[] = await fetchCityName(num);
+		const mapped = results.map((r: any) => ({
+			postalCode: r.postalCode,
+			name: r.name,
+			district: r.district?.name || 'N/A',
+			federalState: r.federalState?.name || 'N/A'
+		}));
+		setAllCodes(mapped);
+		const cities = Array.from(new Set(results.map((r: any) => String(r.name))));
+		if (cities.length > 1) {
+			setShowCitySelect(true);
+			setCityOptions(cities);
+			setCityInput('');
+		} else if (cities.length === 1) {
+			setShowCitySelect(false);
+			setCityOptions([]);
+			setCityInput(cities[0] ?? '');
+		} else {
+			setShowCitySelect(false);
+			setCityOptions([]);
+			setCityInput('');
+			setAllCodes([]);
+			setSelectedInfo('');
+		}
+		return mapped;
 	};
 
 	const handlePostalInputChange = (value: string) => {
@@ -168,19 +188,42 @@ function App() {
 			setShowCitySelect(false);
 			setCityOptions([]);
 			setCityInput('');
+			setAllCodes([]);
+			setSelectedInfo('');
 		}
 	};
 
 	const handleSelectChange = (value: string) => {
 		setPostalInput(value);
+		setSelectedInfo('');
+		
 		const num = parseInt(value, 10);
 		if (!Number.isNaN(num)) {
 			updateCitiesFromPostal(num);
+		}
+
+		console.log("AllCodes on select change:", allCodes);
+		if (value !== '' && cityInput !== ''){
+			console.log("Select change:", value, cityInput);
+			const matched = allCodes.find(code => code.name === cityInput && code.postalCode === value);
+			console.log("Found match for select change:", matched);
+			if (matched) {
+				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
+				console.log('Matched:', matched);
+			}
 		}
 	};
 
 	const handleCitySelectChange = (value: string) => {
 		setCityInput(value);
+		setSelectedInfo('');
+		if (postalInput !== '' && value !== ''){
+			const matched = allCodes.find(code => code.name === value && code.postalCode === postalInput);
+			if (matched) {
+				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
+			}
+		}
+
 	};
 
 	const handleReset = () => {
@@ -190,6 +233,8 @@ function App() {
 		setPostalOptions([]);
 		setShowCitySelect(false);
 		setShowSelect(false);
+		setAllCodes([]);
+		setSelectedInfo('');
 	};
 
 	return (
@@ -252,6 +297,11 @@ function App() {
 						))}
 					</select>
 				)}
+				{selectedInfo !== '' &&
+					<div className="multiline">
+						{selectedInfo}
+					</div>
+				}
 
 				<button type="reset" onClick={handleReset}>Reset</button>
 			</div>
