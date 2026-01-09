@@ -113,7 +113,7 @@ const fetchPostalCode = (city_name: string) => {
 
 
 function App() {
-	const [postalOptions, setPostalOptions] = useState<string[]>([]);
+	const [postalOptions, setPostalOptions] = useState<any[]>([]);
 	const [postalInput, setPostalInput] = useState<string>('');
 	const [showSelect, setShowSelect] = useState<boolean>(false);
 	const [cityOptions, setCityOptions] = useState<string[]>([]);
@@ -139,7 +139,10 @@ function App() {
 					district: r.district?.name || 'N/A',
 					federalState: r.federalState?.name || 'N/A'
 				})));
-				const codes = Array.from(new Set(results.map((r: any) => String(r.postalCode))));
+				const codes = Array.from(new Set(results.map((r: any) => ({
+					postalCode: r.postalCode,
+					name: r.name
+				}))));
 				
 				if (codes.length > 1) {
 					setShowSelect(true);
@@ -148,7 +151,7 @@ function App() {
 				} else if (codes.length === 1) {
 					setShowSelect(false);
 					setPostalOptions([]);
-					setPostalInput(codes[0] ?? '');
+					setPostalInput(codes[0].postalCode ?? '');
 				} else {
 					setShowSelect(false);
 					setPostalOptions([]);
@@ -239,6 +242,8 @@ function App() {
 			}
 		}
 		*/
+
+		// Comment out if using the above block
 		if (value !== '' && cityInput !== '') {
 			const matched = allCodes.find(code => code.name === cityInput && code.postalCode === value);
 			console.log("Found match for select change:", matched);
@@ -326,8 +331,8 @@ function App() {
 							Alle Postleitzahl Optionen ({postalOptions.length} Stk.)
 						</option>
 						{postalOptions.map((code) => (
-							<option key={code} value={code}>
-								{code}
+							<option key={code.postalCode} value={code.postalCode}>
+								{code.postalCode} {/* Important for partial solution - {code.name} */}
 							</option>
 						))}
 					</select>
