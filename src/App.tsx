@@ -156,7 +156,6 @@ function App() {
 		if (debouncedCityInput.trim() === '') {
 			setShowSelect(false);
 			setPostalOptions([]);
-			setPostalInput('');
 			return;
 		}
 		if (!showCitySelect && !autoFillCity) {
@@ -188,13 +187,14 @@ function App() {
 					handleDataChange(foundCodes, codes[0].name, codes[0].postalCode);
 					// selectedInfo nicht zurücksetzen - bleibt erhalten wenn bereits gesetzt
 				} else {
+					if (!autoFillCity) {
 					setShowSelect(false);
 					setPostalOptions([]);
-					setPostalInput('');
 					setAllCodes([]);
 					setSelectedInfo('City not found.');
 					setAutoFillPostal(false);
-					
+					setPostalInput('');
+					}
 				}
 			
 			});
@@ -218,22 +218,21 @@ function App() {
 				setAutoFillPostal(false);
 				console.log("AutoFillPostal is false now");
 			}
-		} else if (debouncedPostalInput !== '') {
+		} else if (debouncedPostalInput !== '' && !autoFillPostal) {
 			setShowCitySelect(false);
 			setCityOptions([]);
+			setAutoFillCity(true);
 			setCityInput('');
 			setAllCodes([]);
 			setSelectedInfo('Invalid postal code.');
 		} else {
 			if (!autoFillPostal) {
-			setShowCitySelect(false);
-			setCityOptions([]);
-			setCityInput('');
-			setAllCodes([]);
+				setShowCitySelect(false);
+				setCityOptions([]);
+				setAllCodes([]);
 			}
 			// selectedInfo nur zurücksetzen wenn Input komplett leer
 			if (debouncedPostalInput === '' && debouncedCityInput === '') {
-				console.log("I do it here");
 				setSelectedInfo('');
 			}
 		}
@@ -278,10 +277,11 @@ function App() {
 		} else {
 			setShowCitySelect(false);
 			setCityOptions([]);
+			setAutoFillCity(true);
 			setCityInput('');
 			setAllCodes([]);
 			setSelectedInfo('Postal code not found.');
-			setAutoFillCity(false);
+			
 		}
 		return [mapped, cities];
 	};
@@ -291,6 +291,7 @@ function App() {
 	};
 
 	const handleSelectChange = async (value: string) => {
+		setAutoFillPostal(true);
 		setPostalInput(value);
 		//setSelectedInfo('');
 
@@ -333,6 +334,7 @@ function App() {
 		if (!isFiveDigit) {
 			setShowCitySelect(false);
 			setCityOptions([]);
+			setAutoFillCity(true);
 			setCityInput('');
 			setAllCodes([]);
 			setSelectedInfo('Invalid postal code.');
@@ -353,6 +355,7 @@ function App() {
 	};
 
 	const handleCitySelectChange = (value: string) => {
+		setAutoFillCity(true);
 		setCityInput(value);
 		//setSelectedInfo('');
 		// Verwende postalInput statt debouncedPostalInput für sofortige Reaktion
