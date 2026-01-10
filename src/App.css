@@ -50,3 +50,7 @@
 input, select {
 	color: white;
 }
+
+.multiline {
+  white-space: pre-line;
+}
