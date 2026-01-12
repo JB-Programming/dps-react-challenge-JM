@@ -61,7 +61,7 @@ const fetchPostalCode = (city_name: string) => fetchLocalities(city_name, 'name'
 function App() {
 	const [postalOptions, setPostalOptions] = useState<any[]>([]);
 	const [postalInput, setPostalInput] = useState<string>('');
-	const [showSelect, setShowSelect] = useState<boolean>(false);
+	const [showPostalSelect, setshowPostalSelect] = useState<boolean>(false);
 	const [cityOptions, setCityOptions] = useState<string[]>([]);
 	const [cityInput, setCityInput] = useState<string>('');
 	const [showCitySelect, setShowCitySelect] = useState<boolean>(false);
@@ -96,7 +96,7 @@ function App() {
 
 	useEffect(() => {
 		if (debouncedCityInput.trim() === '') {
-			setShowSelect(false);
+			setshowPostalSelect(false);
 			setPostalOptions([]);
 			return;
 		}
@@ -115,20 +115,20 @@ function App() {
 				}))));
 				
 				if (codes.length > 1) {
-					setShowSelect(true);
+					setshowPostalSelect(true);
 					setPostalOptions(codes);
 					setAutoFillPostal(true);
 					setPostalInput('');
 					setSelectedInfo('');
 				} else if (codes.length === 1) {
-					setShowSelect(false);
+					setshowPostalSelect(false);
 					setAutoFillPostal(true);
 					setPostalOptions([]);
 					setPostalInput(codes[0].postalCode ?? '');
 					handleDataChange(foundCodes, codes[0].name, codes[0].postalCode);
 				} else {
 					if (!autoFillCity) {
-					setShowSelect(false);
+					setshowPostalSelect(false);
 					setPostalOptions([]);
 					setAllCodes([]);
 					setSelectedInfo('City not found.');
@@ -148,7 +148,7 @@ function App() {
 	useEffect(() => {
 		const isFiveDigit = /^\d{5}$/.test(debouncedPostalInput);
 		if (isFiveDigit) {
-			if (!showSelect && !autoFillPostal) {
+			if (!showPostalSelect && !autoFillPostal) {
 				const num = parseInt(debouncedPostalInput, 10);
 				updateCitiesFromPostal(num);
 			}
@@ -268,7 +268,7 @@ function App() {
 		setCityOptions([]);
 		setPostalOptions([]);
 		setShowCitySelect(false);
-		setShowSelect(false);
+		setshowPostalSelect(false);
 		setAllCodes([]);
 		setSelectedInfo('');
 		setAutoFillCity(false);
@@ -309,7 +309,7 @@ function App() {
 						))}
 					</select>
 				)}
-				{!showSelect ? (
+				{!showPostalSelect ? (
 					<input
 						type="text"
 						name="single_postal_code"
