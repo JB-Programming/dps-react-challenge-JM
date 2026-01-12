@@ -3,42 +3,24 @@ import './App.css';
 import { useState, useEffect } from 'react';
 
 const checkData = (value: any, data:any) => {
-	let correctData = [];
 	let exactMatches = [];
-	//let partialMatches = [];
 	
 	if (typeof(value) === "string") {
 		for (let i = 0; i < data.length; i++) {
 			if (data[i].name.toLowerCase() === value.toLowerCase()) {
 				exactMatches.push(data[i]);
-			} 
-			// Only include partial matches if no exact matches found
-			/*
-			else if (data[i].name.toLowerCase().includes(value.toLowerCase())) {
-				partialMatches.push(data[i]);
 			}
-			*/
 		}
 	}
 	else if (typeof(value) === "number") {
 		for (let i = 0; i < data.length; i++) {
 			if (parseInt(data[i].postalCode) === value) {
 				exactMatches.push(data[i]);
-			} 
-
-			// Only include partial matches if no exact matches found
-			/*
-			else if (data[i].postalCode.toString().startsWith(value.toString())) {
-				partialMatches.push(data[i]);
 			}
-			*/
 		}
 	}
-	correctData = [...exactMatches];
 
-	//correctData = [...exactMatches, ...partialMatches];
-
-	return correctData;	
+	return exactMatches;	
 }
 
 const fetchCityName = (postal_code: number) => {
