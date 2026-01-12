@@ -93,8 +93,6 @@ function App() {
 	const [showCitySelect, setShowCitySelect] = useState<boolean>(false);
 	const [allCodes, setAllCodes] = useState<any[]>([]);
 	const [selectedInfo, setSelectedInfo] = useState<string>('');
-
-	// Debounced values - diese werden erst nach 1 Sekunde aktualisiert
 	const [debouncedCityInput, setDebouncedCityInput] = useState<string>('');
 	const [debouncedPostalInput, setDebouncedPostalInput] = useState<string>('');
 	const [autoFillCity, setAutoFillCity] = useState<boolean>(false);
@@ -122,8 +120,6 @@ function App() {
 		return () => clearTimeout(timer);
 	}, [postalInput]);
 
-	// Effect: Führt API-Aufruf aus, wenn debouncedCityInput sich ändert
-	// Wird nur getriggert, nachdem Benutzer 1 Sekunde lang nichts mehr tippt
 	useEffect(() => {
 		if (debouncedCityInput.trim() === '') {
 			setShowSelect(false);
@@ -150,14 +146,12 @@ function App() {
 					setAutoFillPostal(true);
 					setPostalInput('');
 					setSelectedInfo('');
-					// selectedInfo nicht zurücksetzen - bleibt erhalten wenn bereits gesetzt
 				} else if (codes.length === 1) {
 					setShowSelect(false);
 					setAutoFillPostal(true);
 					setPostalOptions([]);
 					setPostalInput(codes[0].postalCode ?? '');
 					handleDataChange(foundCodes, codes[0].name, codes[0].postalCode);
-					// selectedInfo nicht zurücksetzen - bleibt erhalten wenn bereits gesetzt
 				} else {
 					if (!autoFillCity) {
 					setShowSelect(false);
@@ -177,8 +171,6 @@ function App() {
 	
 	}, [debouncedCityInput]);
 
-	// Effect: Führt API-Aufruf aus, wenn debouncedPostalInput sich ändert
-	// Wird nur getriggert, nachdem Benutzer 1 Sekunde lang nichts mehr tippt
 	useEffect(() => {
 		const isFiveDigit = /^\d{5}$/.test(debouncedPostalInput);
 		if (isFiveDigit) {
@@ -202,7 +194,6 @@ function App() {
 				setCityOptions([]);
 				setAllCodes([]);
 			}
-			// selectedInfo nur zurücksetzen wenn Input komplett leer
 			if (debouncedPostalInput === '' && debouncedCityInput === '') {
 				setSelectedInfo('');
 			}
@@ -264,42 +255,6 @@ function App() {
 	const handleSelectChange = async (value: string) => {
 		setAutoFillPostal(true);
 		setPostalInput(value);
-		//setSelectedInfo('');
-
-				// Find all possible cities for the selected postal code
-
-		/*
-		const num = parseInt(value, 10);
-		let newCodes: any[] = [];
-		let cities: any[] = [];
-		let matched: any = null;
-		if (!Number.isNaN(num)) {
-			let x = await updateCitiesFromPostal(num);
-			newCodes = x[0];
-			cities = x[1];
-		}
-		
-		console.log("AllCodes on select change:", newCodes);
-		if (cities.length === 1 && value !== '' && cities[0] !== '') {
-			matched = newCodes.find(code => code.name === cities[0] && code.postalCode === value);
-			console.log("Found match for select change:", matched);
-			if (matched) {
-				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
-			}
-		}
-		else if (value !== '' && cityInput !== ''){
-			console.log("Select change:", value, cityInput);
-			matched = newCodes.find(code => code.name === cityInput && code.postalCode === value);
-			console.log("Found match for select change:", matched);
-			if (matched) {
-				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
-			}
-		}
-		*/
-
-		// Comment out if using the above block
 		
 		const isFiveDigit = /^\d{5}$/.test(value);
 		if (!isFiveDigit) {
@@ -312,7 +267,6 @@ function App() {
 			return;
 		}
 		
-		// Verwende newCodes statt allCodes - das sind die gerade geladenen Daten
 		if (value !== '' && cityInput !== '') {
 			const matched = (allCodes as any[]).find((code: any) => code.postalCode === value && code.name === cityInput);
 			if (matched) {
@@ -325,8 +279,6 @@ function App() {
 	const handleCitySelectChange = (value: string) => {
 		setAutoFillCity(true);
 		setCityInput(value);
-		//setSelectedInfo('');
-		// Verwende postalInput statt debouncedPostalInput für sofortige Reaktion
 		if (postalInput !== '' && value !== ''){
 			const matched = (allCodes as any[]).find((code: any) => code.name === value && code.postalCode === postalInput);
 			if (matched) {
@@ -401,10 +353,10 @@ function App() {
 						<option value="" disabled>
 							Alle Postleitzahl Optionen ({postalOptions.length} Stk.)
 						</option>
-						{postalOptions.map((code) => (
-							<option key={code.postalCode} value={code.postalCode}>
-								{code.postalCode} {/* Important for partial solution - {code.name} */}
-							</option>
+					{postalOptions.map((code) => (
+						<option key={code.postalCode} value={code.postalCode}>
+							{code.postalCode}
+						</option>
 						))}
 					</select>
 				)}
