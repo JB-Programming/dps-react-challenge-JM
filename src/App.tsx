@@ -23,22 +23,22 @@ const checkData = (value: any, data:any) => {
 	return exactMatches;	
 }
 
-const fetchCityName = (postal_code: number) => {
+const fetchLocalities = (searchParam: string | number, paramType: 'postalCode' | 'name') => {
+	const queryParam = paramType === 'postalCode' ? `postalCode=${searchParam}` : `name=${searchParam}`;
+	
 	return fetch(
-		`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=1&pageSize=50`,
+		`https://openplzapi.org/de/Localities?${queryParam}&page=1&pageSize=50`,
 	)
 	.then((response) => {
 		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
 		const pageSize = 50;
 		const totalPages = Math.ceil(totalCount / pageSize);
-		
-		// Erste Seite bereits geladen, hole restliche Seiten parallel
 		const firstPagePromise = response.json();
 		const remainingPages = [];
 		
 		for (let page = 2; page <= totalPages; page++) {
 			remainingPages.push(
-				fetch(`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=${page}&pageSize=${pageSize}`)
+				fetch(`https://openplzapi.org/de/Localities?${queryParam}&page=${page}&pageSize=${pageSize}`)
 					.then(r => r.json())
 			);
 		}
@@ -47,39 +47,13 @@ const fetchCityName = (postal_code: number) => {
 	})
 	.then((allPages) => {
 		const allData = allPages.flat();
-		const filtered = checkData(postal_code, allData);
+		const filtered = checkData(searchParam, allData);
 		return filtered;
 	});
 }
 
-const fetchPostalCode = (city_name: string) => {
-	return fetch(
-		`https://openplzapi.org/de/Localities?name=${city_name}&page=1&pageSize=50`,
-	)
-	.then((response) => {
-		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
-		const pageSize = 50;
-		const totalPages = Math.ceil(totalCount / pageSize);
-		
-		// Erste Seite bereits geladen, hole restliche Seiten parallel
-		const firstPagePromise = response.json();
-		const remainingPages = [];
-		
-		for (let page = 2; page <= totalPages; page++) {
-			remainingPages.push(
-				fetch(`https://openplzapi.org/de/Localities?name=${city_name}&page=${page}&pageSize=${pageSize}`)
-					.then(r => r.json())
-			);
-		}
-		
-		return Promise.all([firstPagePromise, ...remainingPages]);
-	})
-	.then((allPages) => {
-		const allData = allPages.flat();
-		const filtered = checkData(city_name, allData);
-		return filtered;
-	});
-}
+const fetchCityName = (postal_code: number) => fetchLocalities(postal_code, 'postalCode');
+const fetchPostalCode = (city_name: string) => fetchLocalities(city_name, 'name');
 
 
 
