@@ -28,12 +28,9 @@ const fetchCityName = (postal_code: number) => {
 		`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=1&pageSize=50`,
 	)
 	.then((response) => {
-		console.log('Response:', response);
 		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
-		console.log('Response Status (x-total-count):', totalCount);
 		const pageSize = 50;
 		const totalPages = Math.ceil(totalCount / pageSize);
-		console.log('Total Pages:', totalPages);
 		
 		// Erste Seite bereits geladen, hole restliche Seiten parallel
 		const firstPagePromise = response.json();
@@ -50,9 +47,7 @@ const fetchCityName = (postal_code: number) => {
 	})
 	.then((allPages) => {
 		const allData = allPages.flat();
-		console.log('All Data:', allData);
 		const filtered = checkData(postal_code, allData);
-		console.log('Filtered:', filtered);
 		return filtered;
 	});
 }
@@ -62,12 +57,9 @@ const fetchPostalCode = (city_name: string) => {
 		`https://openplzapi.org/de/Localities?name=${city_name}&page=1&pageSize=50`,
 	)
 	.then((response) => {
-		console.log('Response:', response);
 		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
-		console.log('Response Status (x-total-count):', totalCount);
 		const pageSize = 50;
 		const totalPages = Math.ceil(totalCount / pageSize);
-		console.log('Total Pages:', totalPages);
 		
 		// Erste Seite bereits geladen, hole restliche Seiten parallel
 		const firstPagePromise = response.json();
@@ -84,9 +76,7 @@ const fetchPostalCode = (city_name: string) => {
 	})
 	.then((allPages) => {
 		const allData = allPages.flat();
-		console.log('All Data:', allData);
 		const filtered = checkData(city_name, allData);
-		console.log('Filtered:', filtered);
 		return filtered;
 	});
 }
@@ -198,7 +188,6 @@ function App() {
 			}
 			else {
 				setAutoFillPostal(false);
-				console.log("AutoFillPostal is false now");
 			}
 		} else if (debouncedPostalInput !== '' && !autoFillPostal) {
 			setShowCitySelect(false);
@@ -325,12 +314,9 @@ function App() {
 		
 		// Verwende newCodes statt allCodes - das sind die gerade geladenen Daten
 		if (value !== '' && cityInput !== '') {
-			console.log("newCodes on select change:", allCodes);
 			const matched = (allCodes as any[]).find((code: any) => code.postalCode === value && code.name === cityInput);
-			console.log("Found match for select change:", matched);
 			if (matched) {
 				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
 			}
 		}
 
