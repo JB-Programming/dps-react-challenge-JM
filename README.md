@@ -61,6 +61,7 @@ Additonally functions:
 4. A display area was setup to see which city / PLZ in which area was chosen
 
 Regarding AI usage:
+
 During the creation of the project GitHub Copilot and GitHub Copilot Autocompletion was used.
 The conversation and usage of GitHub Copilot can be seen in the "AI_usage.txt"-File.
 
