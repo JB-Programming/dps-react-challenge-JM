@@ -284,6 +284,7 @@ function App() {
 			</div>
 			<div className="home-card">
 				<p>Your solution goes here 😊</p>
+				<p className='lable'>City:</p>
 				{!showCitySelect ? (
 					<input
 						type="text"
@@ -309,6 +310,7 @@ function App() {
 						))}
 					</select>
 				)}
+				<p className='lable'>Postal Code:</p>
 				{!showPostalSelect ? (
 					<input
 						type="text"
