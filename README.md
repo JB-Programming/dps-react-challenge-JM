@@ -54,13 +54,13 @@ Happy coding!
 
 The requierements have been fullfilled.
 
-Additonally functions:
+**Additonally functions:**
 1. The optional debounce was added
 2. Since in Germany one PLZ can have multiple cities a drop down was also added for the city input, if the API has returned more than one result for the searched postal code
 3. A reset button has been added to reset both inputs when clicked
 4. A display area was setup to see which city / PLZ in which area was chosen
 
-Regarding AI usage:
+**Regarding AI usage:**
 
 During the creation of the project GitHub Copilot and GitHub Copilot Autocompletion was used.
 The conversation and usage of GitHub Copilot can be seen in the "AI_usage.txt"-File.
