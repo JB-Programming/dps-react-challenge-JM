@@ -3,63 +3,42 @@ import './App.css';
 import { useState, useEffect } from 'react';
 
 const checkData = (value: any, data:any) => {
-	let correctData = [];
 	let exactMatches = [];
-	//let partialMatches = [];
 	
 	if (typeof(value) === "string") {
 		for (let i = 0; i < data.length; i++) {
 			if (data[i].name.toLowerCase() === value.toLowerCase()) {
 				exactMatches.push(data[i]);
-			} 
-			// Only include partial matches if no exact matches found
-			/*
-			else if (data[i].name.toLowerCase().includes(value.toLowerCase())) {
-				partialMatches.push(data[i]);
 			}
-			*/
 		}
 	}
 	else if (typeof(value) === "number") {
 		for (let i = 0; i < data.length; i++) {
 			if (parseInt(data[i].postalCode) === value) {
 				exactMatches.push(data[i]);
-			} 
-
-			// Only include partial matches if no exact matches found
-			/*
-			else if (data[i].postalCode.toString().startsWith(value.toString())) {
-				partialMatches.push(data[i]);
 			}
-			*/
 		}
 	}
-	correctData = [...exactMatches];
 
-	//correctData = [...exactMatches, ...partialMatches];
-
-	return correctData;	
+	return exactMatches;	
 }
 
-const fetchCityName = (postal_code: number) => {
+const fetchLocalities = (searchParam: string | number, paramType: 'postalCode' | 'name') => {
+	const queryParam = paramType === 'postalCode' ? `postalCode=${searchParam}` : `name=${searchParam}`;
+	
 	return fetch(
-		`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=1&pageSize=50`,
+		`https://openplzapi.org/de/Localities?${queryParam}&page=1&pageSize=50`,
 	)
 	.then((response) => {
-		console.log('Response:', response);
 		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
-		console.log('Response Status (x-total-count):', totalCount);
 		const pageSize = 50;
 		const totalPages = Math.ceil(totalCount / pageSize);
-		console.log('Total Pages:', totalPages);
-		
-		// Erste Seite bereits geladen, hole restliche Seiten parallel
 		const firstPagePromise = response.json();
 		const remainingPages = [];
 		
 		for (let page = 2; page <= totalPages; page++) {
 			remainingPages.push(
-				fetch(`https://openplzapi.org/de/Localities?postalCode=${postal_code}&page=${page}&pageSize=${pageSize}`)
+				fetch(`https://openplzapi.org/de/Localities?${queryParam}&page=${page}&pageSize=${pageSize}`)
 					.then(r => r.json())
 			);
 		}
@@ -68,46 +47,13 @@ const fetchCityName = (postal_code: number) => {
 	})
 	.then((allPages) => {
 		const allData = allPages.flat();
-		console.log('All Data:', allData);
-		const filtered = checkData(postal_code, allData);
-		console.log('Filtered:', filtered);
+		const filtered = checkData(searchParam, allData);
 		return filtered;
 	});
 }
 
-const fetchPostalCode = (city_name: string) => {
-	return fetch(
-		`https://openplzapi.org/de/Localities?name=${city_name}&page=1&pageSize=50`,
-	)
-	.then((response) => {
-		console.log('Response:', response);
-		const totalCount = parseInt(response.headers.get('x-total-count') || '0', 10);
-		console.log('Response Status (x-total-count):', totalCount);
-		const pageSize = 50;
-		const totalPages = Math.ceil(totalCount / pageSize);
-		console.log('Total Pages:', totalPages);
-		
-		// Erste Seite bereits geladen, hole restliche Seiten parallel
-		const firstPagePromise = response.json();
-		const remainingPages = [];
-		
-		for (let page = 2; page <= totalPages; page++) {
-			remainingPages.push(
-				fetch(`https://openplzapi.org/de/Localities?name=${city_name}&page=${page}&pageSize=${pageSize}`)
-					.then(r => r.json())
-			);
-		}
-		
-		return Promise.all([firstPagePromise, ...remainingPages]);
-	})
-	.then((allPages) => {
-		const allData = allPages.flat();
-		console.log('All Data:', allData);
-		const filtered = checkData(city_name, allData);
-		console.log('Filtered:', filtered);
-		return filtered;
-	});
-}
+const fetchCityName = (postal_code: number) => fetchLocalities(postal_code, 'postalCode');
+const fetchPostalCode = (city_name: string) => fetchLocalities(city_name, 'name');
 
 
 
@@ -115,14 +61,12 @@ const fetchPostalCode = (city_name: string) => {
 function App() {
 	const [postalOptions, setPostalOptions] = useState<any[]>([]);
 	const [postalInput, setPostalInput] = useState<string>('');
-	const [showSelect, setShowSelect] = useState<boolean>(false);
+	const [showPostalSelect, setshowPostalSelect] = useState<boolean>(false);
 	const [cityOptions, setCityOptions] = useState<string[]>([]);
 	const [cityInput, setCityInput] = useState<string>('');
 	const [showCitySelect, setShowCitySelect] = useState<boolean>(false);
 	const [allCodes, setAllCodes] = useState<any[]>([]);
 	const [selectedInfo, setSelectedInfo] = useState<string>('');
-
-	// Debounced values - diese werden erst nach 1 Sekunde aktualisiert
 	const [debouncedCityInput, setDebouncedCityInput] = useState<string>('');
 	const [debouncedPostalInput, setDebouncedPostalInput] = useState<string>('');
 	const [autoFillCity, setAutoFillCity] = useState<boolean>(false);
@@ -150,11 +94,9 @@ function App() {
 		return () => clearTimeout(timer);
 	}, [postalInput]);
 
-	// Effect: Führt API-Aufruf aus, wenn debouncedCityInput sich ändert
-	// Wird nur getriggert, nachdem Benutzer 1 Sekunde lang nichts mehr tippt
 	useEffect(() => {
 		if (debouncedCityInput.trim() === '') {
-			setShowSelect(false);
+			setshowPostalSelect(false);
 			setPostalOptions([]);
 			return;
 		}
@@ -173,22 +115,20 @@ function App() {
 				}))));
 				
 				if (codes.length > 1) {
-					setShowSelect(true);
+					setshowPostalSelect(true);
 					setPostalOptions(codes);
 					setAutoFillPostal(true);
 					setPostalInput('');
 					setSelectedInfo('');
-					// selectedInfo nicht zurücksetzen - bleibt erhalten wenn bereits gesetzt
 				} else if (codes.length === 1) {
-					setShowSelect(false);
+					setshowPostalSelect(false);
 					setAutoFillPostal(true);
 					setPostalOptions([]);
 					setPostalInput(codes[0].postalCode ?? '');
 					handleDataChange(foundCodes, codes[0].name, codes[0].postalCode);
-					// selectedInfo nicht zurücksetzen - bleibt erhalten wenn bereits gesetzt
 				} else {
 					if (!autoFillCity) {
-					setShowSelect(false);
+					setshowPostalSelect(false);
 					setPostalOptions([]);
 					setAllCodes([]);
 					setSelectedInfo('City not found.');
@@ -205,18 +145,15 @@ function App() {
 	
 	}, [debouncedCityInput]);
 
-	// Effect: Führt API-Aufruf aus, wenn debouncedPostalInput sich ändert
-	// Wird nur getriggert, nachdem Benutzer 1 Sekunde lang nichts mehr tippt
 	useEffect(() => {
 		const isFiveDigit = /^\d{5}$/.test(debouncedPostalInput);
 		if (isFiveDigit) {
-			if (!showSelect && !autoFillPostal) {
+			if (!showPostalSelect && !autoFillPostal) {
 				const num = parseInt(debouncedPostalInput, 10);
 				updateCitiesFromPostal(num);
 			}
 			else {
 				setAutoFillPostal(false);
-				console.log("AutoFillPostal is false now");
 			}
 		} else if (debouncedPostalInput !== '' && !autoFillPostal) {
 			setShowCitySelect(false);
@@ -231,7 +168,6 @@ function App() {
 				setCityOptions([]);
 				setAllCodes([]);
 			}
-			// selectedInfo nur zurücksetzen wenn Input komplett leer
 			if (debouncedPostalInput === '' && debouncedCityInput === '') {
 				setSelectedInfo('');
 			}
@@ -293,42 +229,6 @@ function App() {
 	const handleSelectChange = async (value: string) => {
 		setAutoFillPostal(true);
 		setPostalInput(value);
-		//setSelectedInfo('');
-
-				// Find all possible cities for the selected postal code
-
-		/*
-		const num = parseInt(value, 10);
-		let newCodes: any[] = [];
-		let cities: any[] = [];
-		let matched: any = null;
-		if (!Number.isNaN(num)) {
-			let x = await updateCitiesFromPostal(num);
-			newCodes = x[0];
-			cities = x[1];
-		}
-		
-		console.log("AllCodes on select change:", newCodes);
-		if (cities.length === 1 && value !== '' && cities[0] !== '') {
-			matched = newCodes.find(code => code.name === cities[0] && code.postalCode === value);
-			console.log("Found match for select change:", matched);
-			if (matched) {
-				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
-			}
-		}
-		else if (value !== '' && cityInput !== ''){
-			console.log("Select change:", value, cityInput);
-			matched = newCodes.find(code => code.name === cityInput && code.postalCode === value);
-			console.log("Found match for select change:", matched);
-			if (matched) {
-				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
-			}
-		}
-		*/
-
-		// Comment out if using the above block
 		
 		const isFiveDigit = /^\d{5}$/.test(value);
 		if (!isFiveDigit) {
@@ -341,14 +241,10 @@ function App() {
 			return;
 		}
 		
-		// Verwende newCodes statt allCodes - das sind die gerade geladenen Daten
 		if (value !== '' && cityInput !== '') {
-			console.log("newCodes on select change:", allCodes);
 			const matched = (allCodes as any[]).find((code: any) => code.postalCode === value && code.name === cityInput);
-			console.log("Found match for select change:", matched);
 			if (matched) {
 				setSelectedInfo(`Ort: ${matched.name},\n PLZ: ${matched.postalCode},\n Kreis: ${matched.district},\n Bundesland: ${matched.federalState}`);
-				console.log('Matched:', matched);
 			}
 		}
 
@@ -357,8 +253,6 @@ function App() {
 	const handleCitySelectChange = (value: string) => {
 		setAutoFillCity(true);
 		setCityInput(value);
-		//setSelectedInfo('');
-		// Verwende postalInput statt debouncedPostalInput für sofortige Reaktion
 		if (postalInput !== '' && value !== ''){
 			const matched = (allCodes as any[]).find((code: any) => code.name === value && code.postalCode === postalInput);
 			if (matched) {
@@ -374,7 +268,7 @@ function App() {
 		setCityOptions([]);
 		setPostalOptions([]);
 		setShowCitySelect(false);
-		setShowSelect(false);
+		setshowPostalSelect(false);
 		setAllCodes([]);
 		setSelectedInfo('');
 		setAutoFillCity(false);
@@ -415,7 +309,7 @@ function App() {
 						))}
 					</select>
 				)}
-				{!showSelect ? (
+				{!showPostalSelect ? (
 					<input
 						type="text"
 						name="single_postal_code"
@@ -433,10 +327,10 @@ function App() {
 						<option value="" disabled>
 							Alle Postleitzahl Optionen ({postalOptions.length} Stk.)
 						</option>
-						{postalOptions.map((code) => (
-							<option key={code.postalCode} value={code.postalCode}>
-								{code.postalCode} {/* Important for partial solution - {code.name} */}
-							</option>
+					{postalOptions.map((code) => (
+						<option key={code.postalCode} value={code.postalCode}>
+							{code.postalCode}
+						</option>
 						))}
 					</select>
 				)}
